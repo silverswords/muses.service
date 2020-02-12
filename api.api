@@ -1,0 +1,9 @@
+POST: /api/v1/chats/ — Creates a new chat between two users.
+GET: /api/v1/chats/ — Lists all chats the logged-in user belongs to.
+POST: /api/v1/chats/:idChat/messages/ — Adds a new message to a specific chat.
+GET: /api/v1/chats/:idChat/messages/ — Lists all interactions between users on a specific chat.
+
+CREATE_CHAT: sends a POST call to /chats/ and merges the new chat in the store.
+GET_ALL_CHATS: sends a GET call to /chats/ and adds the returned chats in the store.
+SEND_MESSAGE: sends a POST call to /chats/:idChat/messages/ and adds the new message to the store.
+GET_ALL_MESSAGES: sends a GET call to /chats/:idChat/messages/ and adds the returned messages in the store.
