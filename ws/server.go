@@ -7,6 +7,35 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type roomManager interface {
+	Join(room string, connection Conn)
+	Leave(room string, connection Conn)
+
+	// may send msg or webRTC request
+	Send(room, event string, args ...interface{})
+
+	// list members
+	Members(room string) int
+	Rooms(connection Conn) []string
+}
+
+type client interface {
+	// session id
+	ID() string
+	Close() error
+
+	Send(msg string, v ...interface{})
+	// receive msg or webRTC request
+	Emit(msg string, v ...interface{})
+
+	Join(room string)
+	Leave(room string)
+}
+
+type server struct {
+	rooms map[string]map[string]client
+}
+
 var upgrader = &websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
