@@ -14,17 +14,18 @@ func InitRouter() *gin.Engine {
 
 func apiGrp(r *gin.Engine) {
 	apiGrp := r.Group("/api/v1")
+	apiGrp.POST("/login")
+	apiGrp.POST("/register")
+	apiGrp.POST("/default") // 游客模式
 
 	// users
 	userGrp := apiGrp.Group("/user")
+	// userGrp.Use(mdw.AuthJWT())
 	{
-		userGrp.POST("/default") // 游客模式
-		userGrp.POST("/login")
 		userGrp.POST("/joinRoom")
 		userGrp.POST("/leaveRoom")
 		userGrp.POST("/sendMsg")
 
-		userGrp.POST("/register")
 		userGrp.POST("/removeUser")
 	}
 
