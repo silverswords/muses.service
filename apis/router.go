@@ -2,27 +2,28 @@ package apis
 
 import (
 	"github.com/gin-gonic/gin"
+	"muses.service/handler"
+	"muses.service/middleware"
 )
 
 func InitRouter() *gin.Engine {
 	r := gin.Default()
 
 	apiGrp(r)
-
 	return r
 }
 
 func apiGrp(r *gin.Engine) {
 	apiGrp := r.Group("/api/v1")
-	apiGrp.POST("/login")
+	apiGrp.POST("/login", handler.Login)
 	apiGrp.POST("/register")
 	apiGrp.POST("/default") // 游客模式
 
 	// users
 	userGrp := apiGrp.Group("/user")
-	// userGrp.Use(mdw.AuthJWT())
+	userGrp.Use(middleware.MwUser)
 	{
-		userGrp.POST("/joinRoom")
+		userGrp.POST("/joinRoom", handler.Joinroom)
 		userGrp.POST("/leaveRoom")
 		userGrp.POST("/sendMsg")
 
