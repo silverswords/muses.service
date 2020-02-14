@@ -55,7 +55,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		intv, _ := strconv.Atoi(string(myval))
 		fmt.Println(intv)
 		intstr := strconv.Itoa(intv)
-
 		err = c.WriteMessage(mt, []byte(intstr))
 
 		log.Printf("send: %s", intstr)
