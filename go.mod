@@ -7,6 +7,7 @@ require (
 	github.com/gbrlsnchs/jwt/v3 v3.0.0-rc.1
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-redis/redis v6.15.7+incompatible
+	github.com/go-redis/redis/v7 v7.1.0
 	github.com/gorilla/websocket v1.4.1
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
