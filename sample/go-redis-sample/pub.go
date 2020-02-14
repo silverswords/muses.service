@@ -14,30 +14,40 @@ import (
 	"github.com/go-redis/redis"
 )
 
-func main() {
+type foo struct {
+	boo int `json:"boo"`
+	hei int `json:"hei"`
+}
 
+func main() {
 	var client = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
+	var hello = "hello"
+	// hello := foo{boo: 1, hei: 2}
+	// hello := 23.23
 	go func() {
 		for {
-			client.Publish("room1", "hello")
+			t1 := time.Now()
+			client.Publish("room1", hello)
+			fmt.Println("pub", time.Now().Sub(t1))
+
 			time.Sleep(time.Second)
 		}
 	}()
 
-	for {
-		pubsub := client.Subscribe("room1")
-		_, err := pubsub.Receive()
-		if err != nil {
-			return
-		}
-		ch := pubsub.Channel()
-		for msg := range ch {
-			fmt.Println(msg.Channel, msg.Payload, "\r\n")
-		}
+	pubsub := client.Subscribe("room1")
+	_, err := pubsub.Receive()
+	if err != nil {
+		return
 	}
+	ch := pubsub.Channel()
+	for msg := range ch {
+		t2 := time.Now()
+		fmt.Println(msg.Channel, msg.Payload)
+		fmt.Println("sub", time.Now().Sub(t2))
+	}
+
 }
