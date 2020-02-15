@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/go-redis/redis"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -56,8 +55,17 @@ func (c *conn) isUserOnline(username string) bool {
 	userkey := "online." + username
 	set, err := c.redisC.SetNX(userkey, username, 10*time.Second).Result()
 	if err != nil {
-		fmt.Println("Error on Client SetNX", err)
+		fmt.Println("Error on Client SetNX: ", err)
 		return false
 	}
-	return set
+	// set == 0 already online
+	return set == 0
+}
+
+func (c *conn) AddUser(username string) int64{
+	val, err := c.redisC.SAdd("users",username).Result()
+	if err != nil {
+		fmt.Println("Error on add user: ", err)
+	}
+	return val
 }
