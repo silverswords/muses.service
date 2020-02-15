@@ -13,10 +13,8 @@ type Conn interface{
 		// ID returns session id
 		ID() string
 		Close() error
-		URL() url.URL
 		LocalAddr() net.Addr
 		RemoteAddr() net.Addr
-		RemoteHeader() http.Header
 	
 		// Context of this connection. You can save one context for one
 		// connection, and share it between all handlers. The handlers
@@ -35,12 +33,12 @@ type Conn interface{
 }
 
 type conn struct {
-	userid uint64
+	user string
 	wsC *websocket.Conn
 	redisC *redis.Client
 }
 
-func NewConn(wsc *websocket.Conn,redisOptions *redis.Options) *Conn {
+func NewConn(wsc *websocket.Conn,redisOptions *redis.Options, username string) *Conn {
 	var c Conn
 	c.redisC = redis.NewClient(redisOptions/*&redis.Options{
 		Addr:     "localhost:6379",
@@ -48,7 +46,25 @@ func NewConn(wsc *websocket.Conn,redisOptions *redis.Options) *Conn {
 		DB:       0,  // use default DB
 	}*/)
 	c.wsC = wsc
+	c.user = username
 	return c
+}
+
+func (c *conn) ID() string {
+	return c.user
+}
+
+func(c *conn) Close() error {
+	_ := c.redisC.Close()
+	return c.wsC.Close()
+}
+
+func (c *conn) LocalAddr() net.Addr {
+	return c.wsC.UnderlyingConn().LocalAddr()
+}
+
+func (c *conn) RemoteAddr()  net.Addr {
+	return c.wsC.UnderlyingConn().RemoteAddr()
 }
 
 // usage 

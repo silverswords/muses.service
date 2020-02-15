@@ -90,7 +90,6 @@ func echo(c *gin.Context) {
 
 		// when receive /send message, call Publish to send
 		// subclient.Publish("room1", message)
-
 		if err != nil {
 			log.Println("write:", err)
 			break
