@@ -11,7 +11,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	"log"
 	"net/http"
@@ -36,50 +35,40 @@ var client = redis.NewClient(&redis.Options{
 })
 
 func echo(c *gin.Context) {
+	// when user system on comment off their
+	// check for user if login
+	// username := c.GetString("username")
+	// _, err = client.SetNX("online."+ username, username, 120*time.Second).Result()
+	// if err != nil {
+	// 	fmt.Println("Error on Client SetNX", err)
+	// 	return
+	// }
+	//  tickerChan use for remain login status
+	// tickerChan := time.NewTicker(time.Second * 60).C
+
+	// get ws connection
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Print("upgrade ws:", err)
 		return
 	}
-
-	_, err = client.SetNX("userkey", "username", 10*time.Second).Result()
-	if err != nil {
-		fmt.Println("Error on Client SetNX", err)
-		return
-	}
-
-	// tickerChan := time.NewTicker(time.Second * 60).C
-
-	var subclient = redis.NewClient(&redis.Options{
+	conn := NewConn(ws, &redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	val, err := subclient.SAdd("users", "username").Result()
+
+	val, err := conn.redisC.SAdd("users", "username").Result()
 	if err != nil {
 		fmt.Println("Error on add user: ", err)
 	}
 	fmt.Println(val)
 
-	pubsub := subclient.Subscribe("room1")
-	_, err = pubsub.Receive()
-	if err != nil {
-		return
-	}
-	ch := pubsub.Channel()
-
-	// handle sub messages
-	go func() {
-		for msg := range ch {
-			// t2 := time.Now()
-			fmt.Println("send: ", msg.Channel, msg.Payload)
-			err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Payload))
-			// fmt.Println("sub", time.Now().Sub(t2))
-		}
-	}()
-
 	defer ws.Close()
+
+	// read from ws and handle
 	for {
+
 		_, message, err := ws.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
@@ -87,13 +76,20 @@ func echo(c *gin.Context) {
 		}
 		log.Printf("recv: %s", message)
 
-		subclient.Publish("room1", message)
-		// get couter and return +=1
-		// key := "counter"
-		// myval, _ := client.Get(key).Result()
-		// intv, _ := strconv.Atoi(string(myval))
-		// dosomething on intv
-		// intstr := strconv.Itoa(intv)
+		// when receive /join room
+		// subscrible and send message
+		// ch := conn.Subscribe("room1")
+		// go func() {
+		// 	for msg := range ch {
+		// 		// t2 := time.Now()
+		// 		fmt.Println("send: ", msg.Channel, msg.Payload)
+		// 		err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Payload))
+		// 		// fmt.Println("sub", time.Now().Sub(t2))
+		// 	}
+		// }()
+
+		// when receive /send message, call Publish to send
+		// subclient.Publish("room1", message)
 
 		if err != nil {
 			log.Println("write:", err)

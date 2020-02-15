@@ -51,6 +51,20 @@ func NewConn(wsc *websocket.Conn,redisOptions *redis.Options) *Conn {
 	return c
 }
 
+// usage 
+// for msg := range ch {
+// 	fmt.Println("send: ", msg.Channel, msg.Payload)
+// 	err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Payload))
+// }
+func (c *conn) Subscribe(room string)  <-chan *Message {
+	pubsub := c.redisC.Subscribe(room)
+	_, err = pubsub.Receive()
+	if err != nil {
+		return nil
+	}
+	return pubsub.Channel()
+}
+
 func (c *conn) isUserOnline(username string) bool {
 	userkey := "online." + username
 	set, err := c.redisC.SetNX(userkey, username, 10*time.Second).Result()
