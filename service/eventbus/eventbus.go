@@ -162,7 +162,7 @@ func (b *eventbus) UnSubscribe(topics ...string) error {
 }
 
 //------------------------------------------------------------------------------
-// evt callback
+// evt callback note that msg only be string. so recommend JSON form
 
 func (b *eventbus) Register(evt string, fn interface{}) {
 
@@ -170,4 +170,4 @@ func (b *eventbus) Register(evt string, fn interface{}) {
 
 func (b *eventbus) UnRegister(evt string) {}
 
-// func (b *eventbus)
+func (b *eventbus) Event(evt string) {}
