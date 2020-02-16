@@ -6,7 +6,7 @@
  * @desc [description]
  */
 
-package main
+package service
 
 import (
 	"flag"
@@ -56,7 +56,7 @@ func echo(c *gin.Context) {
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
-	})
+	}, "")
 
 	val, err := conn.redisC.SAdd("users", "username").Result()
 	if err != nil {
