@@ -19,12 +19,22 @@ func init() {
 	os.Setenv("REDIS_URL", "redis://localhost:6379/0")
 }
 
+func NewEventBusOptions(opts *redis.Options) *eventbus {
+	return &eventbus{redisC: redis.NewClient(opts),
+		subC: make(map[string]*redis.PubSub)}
+}
+
 func NewEventBus() *eventbus {
-	return &eventbus{redisC: redis.NewClient(&redis.Options{
+	return NewEventBusOptions(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
-	})}
+	})
+}
+
+// redisUrl = os.Getenv("REDIS_URL")
+func NewEventBusURLenv() (b *eventbus, err error) {
+	return NewEventBusURL(os.Getenv("REDIS_URL"))
 }
 
 // redisUrl, _ := url.Parse("redis://localhost:6379")
@@ -44,21 +54,12 @@ func NewEventBusURL(s string) (b *eventbus, err error) {
 		}
 	}
 
-	b = &eventbus{redisC: redis.NewClient(&redis.Options{
+	b = NewEventBusOptions(&redis.Options{
 		Addr:     redisURL.Host,
 		Password: redisPassword,
 		DB:       db, // use default DB
-	})}
+	})
 	return
-}
-
-// redisUrl = os.Getenv("REDIS_URL")
-func NewEventURLenv() (b *eventbus, err error) {
-	return NewEventBusURL(os.Getenv("REDIS_URL"))
-}
-
-func NewEventBusOptions(opts *redis.Options) *eventbus {
-	return &eventbus{redisC: redis.NewClient(opts)}
 }
 
 //------------------------------------------------------------------------------
@@ -86,8 +87,8 @@ func (b *eventbus) Publish(topic string, msg ...interface{}) {
 // 	fmt.Println("send: ", msg.Channel, msg.Pattern, msg.Payload)
 // 	err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Payload))
 // }
-func (b *eventbus) Subscribe(topic ...string) <-chan *redis.Message {
-	pubsub := b.redisC.Subscribe(topic...)
+func (b *eventbus) Subscribe(topics ...string) <-chan *redis.Message {
+	pubsub := b.redisC.Subscribe(topics...)
 	iface, err := pubsub.Receive()
 	if err != nil {
 		return nil
@@ -103,6 +104,9 @@ func (b *eventbus) Subscribe(topic ...string) <-chan *redis.Message {
 		// handle error
 	}
 
+	for _, topic := range topics {
+		b.subC[topic] = pubsub
+	}
 	return pubsub.Channel()
 }
 
@@ -124,15 +128,17 @@ func (b *eventbus) PSubscribe(pattern ...string) <-chan *redis.Message {
 		// handle error
 	}
 
+	for _, topic := range pattern {
+		b.subC[topic] = pubsub
+	}
 	return pubsub.Channel()
 }
 
-func (b *eventbus) UnSubscribe(topic string) error {
-	return b.subC[topic].Close()
-}
-
-func (b *eventbus) BUnSubscribe(topics ...string) error {
+func (b *eventbus) UnSubscribe(topics ...string) error {
 	for _, topic := range topics {
+		if b.subC[topic] == nil {
+			continue
+		}
 		err := b.subC[topic].Close()
 		if err != nil {
 			return err
