@@ -1,0 +1,13 @@
+version: '2'
+services:
+  cabin_db:
+    image: mysql:latest
+    volumes:
+      - "./.mysql-data/db:/var/lib/mysql"
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: 111111
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 111111
