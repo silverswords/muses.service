@@ -1,4 +1,4 @@
-package service
+package eventbus
 
 import (
 	"fmt"
@@ -12,20 +12,22 @@ import (
 
 type eventbus struct {
 	redisC *redis.Client
-	subC   map[string]*redis.PubSub
+	// use for unsub target channel
+	subC map[string]*redis.PubSub
 }
 
+//------------------------------------------------------------------------------
 func init() {
 	os.Setenv("REDIS_URL", "redis://localhost:6379/0")
 }
 
-func NewEventBusOptions(opts *redis.Options) *eventbus {
+func NewOptions(opts *redis.Options) *eventbus {
 	return &eventbus{redisC: redis.NewClient(opts),
 		subC: make(map[string]*redis.PubSub)}
 }
 
-func NewEventBus() *eventbus {
-	return NewEventBusOptions(&redis.Options{
+func NewDefault() *eventbus {
+	return NewOptions(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
@@ -33,12 +35,12 @@ func NewEventBus() *eventbus {
 }
 
 // redisUrl = os.Getenv("REDIS_URL")
-func NewEventBusURLenv() (b *eventbus, err error) {
-	return NewEventBusURL(os.Getenv("REDIS_URL"))
+func New() (b *eventbus, err error) {
+	return NewURL(os.Getenv("REDIS_URL"))
 }
 
 // redisUrl, _ := url.Parse("redis://localhost:6379")
-func NewEventBusURL(s string) (b *eventbus, err error) {
+func NewURL(s string) (b *eventbus, err error) {
 	redisPassword := ""
 	redisURL, err := url.Parse(s)
 	if redisURL.User != nil {
@@ -54,12 +56,24 @@ func NewEventBusURL(s string) (b *eventbus, err error) {
 		}
 	}
 
-	b = NewEventBusOptions(&redis.Options{
+	b = NewOptions(&redis.Options{
 		Addr:     redisURL.Host,
 		Password: redisPassword,
 		DB:       db, // use default DB
 	})
 	return
+}
+
+// Close closes the client, releasing any open resources.
+//
+// It is rare to Close a Client, as the Client is meant to be
+// long-lived and shared between many goroutines.
+func (b *eventbus) Close() error {
+	// don't need because of pubsub is in pool of redisC
+	// for _, subC := range b.subC {
+	// 	subC.Close()
+	// }
+	return b.redisC.Close()
 }
 
 //------------------------------------------------------------------------------
@@ -146,3 +160,14 @@ func (b *eventbus) UnSubscribe(topics ...string) error {
 	}
 	return nil
 }
+
+//------------------------------------------------------------------------------
+// evt callback
+
+func (b *eventbus) Register(evt string, fn interface{}) {
+
+}
+
+func (b *eventbus) UnRegister(evt string) {}
+
+// func (b *eventbus)

@@ -1,14 +1,14 @@
-package service_test
+package eventbus_test
 
 import (
 	"testing"
 	"time"
 
-	"muses.service/service"
+	evb "muses.service/service/eventbus"
 )
 
 func TestEventBus(t *testing.T) {
-	e := service.NewEventBus()
+	e := evb.NewDefault()
 	channel1 := e.Subscribe("room1")
 	channel2 := e.Subscribe("room2")
 	channel3 := e.Subscribe("room3")
@@ -44,7 +44,7 @@ func TestEventBus(t *testing.T) {
 }
 
 func TestEventBusUrl(t *testing.T) {
-	e, err := service.NewEventBusURLenv()
+	e, err := evb.New()
 	if err != nil {
 		t.Error(err)
 	}
