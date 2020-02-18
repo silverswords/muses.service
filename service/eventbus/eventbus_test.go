@@ -1,6 +1,7 @@
 package eventbus_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -78,4 +79,18 @@ func TestEventBusUrl(t *testing.T) {
 		t.Error("can't PSub")
 	}
 
+}
+
+func add(a string) { fmt.Println(a) }
+
+func TestEvent(t *testing.T) {
+	evb, err := evb.New()
+	if err != nil {
+		t.Fatal("Couldn't read env url to create evb")
+	}
+	go evb.Register("add", add)
+	evb.Publish("add", "hello")
+	time.Sleep(time.Second * 3)
+	evb.Publish("add", "/exit")
+	t.Fail()
 }

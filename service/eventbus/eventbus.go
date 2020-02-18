@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -93,9 +95,9 @@ type muxEntry struct {
 }
 
 // DefaultServeMux is the default ServeMux used by Serve.
-var DefaultEventBus = &defaultEventBus
+var DefaultServeMux = &defaultServeMux
 
-var defaultEventBus EventBus
+var defaultServeMux ServeMux
 
 // HandleFunc registers the handler function for the given pattern.
 func (mux *ServeMux) HandleFunc(pattern string, handler func(http.ResponseWriter, *Request)) {
@@ -150,7 +152,7 @@ func appendSorted(es []muxEntry, e muxEntry) []muxEntry {
 }
 
 func (b *EventBus) HandleFunc(pattern string, handler func(http.ResponseWriter, *Request)) {
-	DefaultEventBus.mux.HandleFunc(pattern, handler)
+	DefaultServeMux.HandleFunc(pattern, handler)
 }
 
 // EventBus to get subscription and do HandleFunc.
@@ -215,11 +217,11 @@ func NewURL(s string) (b *EventBus, err error) {
 //
 // It is rare to Close a Client, as the Client is meant to be
 // long-lived and shared between many goroutines.
+// don't need because of pubsub is in pool of redisC
+// for _, subC := range b.subC {
+// 	subC.Close()
+// }
 func (b *EventBus) Close() error {
-	// don't need because of pubsub is in pool of redisC
-	// for _, subC := range b.subC {
-	// 	subC.Close()
-	// }
 	return b.redisC.Close()
 }
 
@@ -310,15 +312,33 @@ func (b *EventBus) UnSubscribe(channels ...string) error {
 
 //------------------------------------------------------------------------------
 // evt callback note that msg only be string. so recommend JSON form
-
+// Usage go Register
 func (b *EventBus) Register(channel string, fn interface{}) {
-
+	msgChan := b.Subscribe(channel)
+	var chatExit = false
 	// select channel message and do handler
-	go func() {
-
-	}()
+	for !chatExit {
+		select {
+		case msg := <-msgChan:
+			if msg.Payload == "/exit" {
+				// fmt.Println("exit")
+				chatExit = true
+			} else {
+				// t1 := time.Now()
+				passedArguments := make([]reflect.Value, 0)
+				passedArguments = append(passedArguments, reflect.ValueOf(msg.Payload))
+				reflect.ValueOf(fn).Call(passedArguments)
+				fmt.Println(time.Now())
+				// fmt.Println(time.Now().Sub(t1))
+			}
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 }
 
 func (b *EventBus) UnRegister(channel string) {}
 
-func (b *EventBus) Event(channel string, msg ...interface{}) {}
+func (b *EventBus) Event(channel string, msg ...interface{}) {
+	b.Publish(channel, msg...)
+}
