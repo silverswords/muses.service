@@ -1,16 +1,16 @@
 package middleware
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
-  "strings"
-  "errors"
-  "fmt"
-  "time"
+	"strings"
+	"time"
 
-  "github.com/gin-gonic/gin"
-  "github.com/dgrijalva/jwt-go"
-  "github.com/sirupsen/logrus"
-  "muses.service/model"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"muses.service/model"
 )
 
 const contextKeyUserObj = "authedUserObj"
@@ -24,10 +24,10 @@ func ctxTokenToUser(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusPreconditionFailed, gin.H{"msg": "header Authorization has not Bearer token"})
 			return
 		}
-		token = strings.TrimSpace(hToken[bearerLength: len(hToken) - 1])
-  }
-  
-  println(token)
+		token = strings.TrimSpace(hToken[bearerLength : len(hToken)-1])
+	}
+
+	println(token)
 	usr, err := jwtParseUser(token)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusPreconditionFailed, gin.H{"msg": err.Error()})
@@ -35,7 +35,7 @@ func ctxTokenToUser(c *gin.Context) {
 	}
 
 	//store the user Model in the context
-  c.Set(contextKeyUserObj, *usr)
+	c.Set(contextKeyUserObj, *usr)
 	c.Next()
 	// after request
 }
@@ -56,7 +56,7 @@ func (c userStdClaims) Valid() (err error) {
 		return errors.New("token is expired")
 	}
 
-	if c.User.ID < 1 {
+	if c.User.ID < 0 {
 		return errors.New("invalid user in jwt")
 	}
 	return
@@ -64,7 +64,7 @@ func (c userStdClaims) Valid() (err error) {
 
 func JwtGenerateToken(m *model.User) (string, error) {
 	m.Password = ""
-	expireTime := time.Now().Add(time.Hour*24)
+	expireTime := time.Now().Add(time.Hour * 24)
 	stdClaims := jwt.StandardClaims{
 		ExpiresAt: expireTime.Unix(),
 		IssuedAt:  time.Now().Unix(),
@@ -88,11 +88,11 @@ func JwtGenerateToken(m *model.User) (string, error) {
 func jwtParseUser(tokenString string) (*model.User, error) {
 	if tokenString == "" {
 		return nil, errors.New("no token is found in Authorization Bearer")
-  }
-  
+	}
+
 	claims := userStdClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-    println(token)
+		println(token)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

@@ -3,6 +3,7 @@ module muses.service
 go 1.13
 
 require (
+	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fengyfei/comet v0.0.0-20200105081839-ed9e5cc45741
 	github.com/gbrlsnchs/jwt/v3 v3.0.0-rc.1
