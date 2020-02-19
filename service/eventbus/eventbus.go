@@ -85,10 +85,9 @@ type Event struct {
 }
 
 type ServeMux struct {
-	mu    sync.RWMutex
-	m     map[string]muxEntry
-	es    []muxEntry // slice of entries sorted from longest to shortest.
-	hosts bool       // whether any patterns contain hostnames
+	mu sync.RWMutex
+	m  map[string]muxEntry
+	es []muxEntry // slice of entries sorted from longest to shortest.
 }
 
 type muxEntry struct {
@@ -185,10 +184,6 @@ func (mux *ServeMux) Handle(pattern string, handler Handler) {
 	if pattern[len(pattern)-1] == '/' {
 		mux.es = appendSorted(mux.es, e)
 	}
-
-	if pattern[0] != '/' {
-		mux.hosts = true
-	}
 }
 func appendSorted(es []muxEntry, e muxEntry) []muxEntry {
 	n := len(es)
@@ -217,7 +212,7 @@ type EventBus struct {
 	// use for unsub target channel
 	subC map[string]*redis.PubSub
 
-	mux     ServeMux
+	mux     *ServeMux
 	msgChan chan *redis.Message
 }
 
@@ -225,22 +220,12 @@ func init() {
 	os.Setenv("REDIS_URL", "redis://localhost:6379/0")
 }
 
-func NewOptions(opts *redis.Options) *EventBus {
-	return &EventBus{redisC: redis.NewClient(opts),
-		subC: make(map[string]*redis.PubSub)}
-}
-
-func NewDefault() *EventBus {
-	return NewOptions(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-}
-
 // redisUrl = os.Getenv("REDIS_URL")
 func New() (b *EventBus, err error) {
-	return NewURL(os.Getenv("REDIS_URL"))
+	b, err = NewURL(os.Getenv("REDIS_URL"))
+	b.mux = &defaultServeMux
+	b.msgChan = make(chan *redis.Message, 100)
+	return
 }
 
 // redisUrl, _ := url.Parse("redis://localhost:6379")
@@ -266,6 +251,19 @@ func NewURL(s string) (b *EventBus, err error) {
 		DB:       db, // use default DB
 	})
 	return
+}
+
+func NewDefault() *EventBus {
+	return NewOptions(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+}
+
+func NewOptions(opts *redis.Options) *EventBus {
+	return &EventBus{redisC: redis.NewClient(opts),
+		subC: make(map[string]*redis.PubSub)}
 }
 
 // Close closes the client, releasing any open resources.
