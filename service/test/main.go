@@ -2,26 +2,21 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"strconv"
 
-	eventbus "muses.service/service/eventbus"
+	eb "muses.service/service/eventbus"
 )
 
-func add(a string) {
-	fmt.Println("ds", time.Now())
-	fmt.Println(a)
+func add(e *eb.Event) {
+	a, _ := strconv.Atoi(e.Get("a"))
+	b, _ := strconv.Atoi(e.Get("b"))
+
+	fmt.Println(a + b)
 }
 
 func main() {
 
-	evb, err := eventbus.New()
-	if err != nil {
-		fmt.Println("Couldn't read env url to create evb")
-	}
-	go evb.Register("add", add)
-	time.Sleep(time.Second * 1)
-	evb.Publish("add", "hello")
+	eb.HandleFunc("/add", add)
 
-	evb.Publish("add", "/exit")
-	time.Sleep(time.Second * 1)
+	eb.Serve()
 }

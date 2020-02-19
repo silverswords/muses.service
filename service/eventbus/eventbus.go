@@ -1,11 +1,11 @@
 package eventbus
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -75,9 +75,13 @@ func (f HandlerFunc) ServeEvent(e *Event) {
 	f(e)
 }
 
+func NotFound(e *Event) { /* donothing now*/ }
+
+func NotFoundHandler() Handler { return HandlerFunc(NotFound) }
+
 type Event struct {
 	*redis.Message
-	http.Header
+	*http.Header
 }
 
 type ServeMux struct {
@@ -99,6 +103,55 @@ var defaultServeMux ServeMux
 
 // NewServeMux allocates and returns a new ServeMux.
 func NewServeMux() *ServeMux { return new(ServeMux) }
+
+// Find a handler on a handler map given a path string.
+// Most-specific (longest) pattern wins.
+func (mux *ServeMux) match(path string) (h Handler, pattern string) {
+	// Check for exact match first.
+	v, ok := mux.m[path]
+	if ok {
+		return v.h, v.pattern
+	}
+
+	// Check for longest valid match.  mux.es contains all patterns
+	// that end in / sorted from longest to shortest.
+	for _, e := range mux.es {
+		if strings.HasPrefix(path, e.pattern) {
+			return e.h, e.pattern
+		}
+	}
+	return nil, ""
+}
+
+// Handler returns the handler to use for the given request,
+// consulting e.Channel. It always returns
+// a non-nil handler.func (mux *ServeMux) Handler(e *Event)
+func (mux *ServeMux) Handler(e *Event) (h Handler, pattern string) {
+	mux.mu.RLock()
+	defer mux.mu.RUnlock()
+
+	if h == nil {
+		h, pattern = mux.match(e.Channel)
+	}
+	if h == nil {
+		h, pattern = NotFoundHandler(), ""
+	}
+	return
+}
+
+// ServeHTTP dispatches the request to the handler whose
+// pattern most closely matches the request URL.
+func (mux *ServeMux) ServeEvent(e *Event) {
+	// if r.RequestURI == "*" {
+	// 	if r.ProtoAtLeast(1, 1) {
+	// 		w.Header().Set("Connection", "close")
+	// 	}
+	// 	w.WriteHeader(StatusBadRequest)
+	// 	return
+	// }
+	h, _ := mux.Handler(e)
+	h.ServeEvent(e)
+}
 
 // HandleFunc registers the handler function for the given pattern.
 func (mux *ServeMux) HandleFunc(pattern string, handler func(*Event)) {
@@ -156,16 +209,18 @@ func HandleFunc(pattern string, handler func(*Event)) {
 	DefaultServeMux.HandleFunc(pattern, handler)
 }
 
+//------------------------------------------------------------------------------
+
 // EventBus to get subscription and do HandleFunc.
 type EventBus struct {
 	redisC *redis.Client
 	// use for unsub target channel
 	subC map[string]*redis.PubSub
 
-	mux ServeMux
+	mux     ServeMux
+	msgChan chan *redis.Message
 }
 
-//------------------------------------------------------------------------------
 func init() {
 	os.Setenv("REDIS_URL", "redis://localhost:6379/0")
 }
@@ -311,9 +366,29 @@ func (b *EventBus) UnSubscribe(channels ...string) error {
 }
 
 //------------------------------------------------------------------------------
+
+func (b *EventBus) Serve() {
+	for {
+		select {
+		case msg := <-b.msgChan:
+			go b.serve(msg)
+		default:
+		}
+	}
+}
+
+func (b *EventBus) serve(msg *redis.Message) {
+	header := make(http.Header)
+	json.Unmarshal([]byte(msg.Payload), &header)
+	e := &Event{msg, &header}
+	b.mux.ServeEvent(e)
+}
+
+//------------------------------------------------------------------------------
+
 // evt callback note that msg only be string. so recommend JSON form
 // Usage go Register
-func (b *EventBus) Register(channel string, fn interface{}) {
+func (b *EventBus) Register(channel string) {
 	msgChan := b.Subscribe(channel)
 	var chatExit = false
 	// select channel message and do handler
@@ -324,9 +399,7 @@ func (b *EventBus) Register(channel string, fn interface{}) {
 				// fmt.Println("exit")
 				chatExit = true
 			} else {
-				passedArguments := make([]reflect.Value, 0)
-				passedArguments = append(passedArguments, reflect.ValueOf(msg.Payload))
-				reflect.ValueOf(fn).Call(passedArguments)
+				b.msgChan <- msg
 			}
 		default:
 			time.Sleep(100 * time.Millisecond)
@@ -334,8 +407,11 @@ func (b *EventBus) Register(channel string, fn interface{}) {
 	}
 }
 
-func (b *EventBus) UnRegister(channel string) {}
+func (b *EventBus) UnRegister(channel string) {
+	b.Publish(channel, "/exit")
+}
 
-func (b *EventBus) Event(channel string, msg ...interface{}) {
-	b.Publish(channel, msg...)
+func (b *EventBus) Event(channel string, msg interface{}) {
+	data, _ := json.Marshal(msg)
+	b.Publish(channel, data)
 }

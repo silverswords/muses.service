@@ -1,7 +1,6 @@
 package eventbus_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -81,15 +80,16 @@ func TestEventBusUrl(t *testing.T) {
 
 }
 
-func TestEvent(t *testing.T) {
-	b, err := evb.New()
-	if err != nil {
-		t.Fatal("Couldn't read env url to create evb")
-	}
-	go b.Register("log", func(a string) { fmt.Println(a) })
-	time.Sleep(time.Second * 1)
-	b.Publish("log", "hello")
+// a out-of-data test
+// func TestEvent(t *testing.T) {
+// 	b, err := evb.New()
+// 	if err != nil {
+// 		t.Fatal("Couldn't read env url to create evb")
+// 	}
+// 	go b.Register("log", func(a string) { fmt.Println(a) })
+// 	time.Sleep(time.Second * 1)
+// 	b.Publish("log", "hello")
 
-	b.Publish("log", "/exit")
-	time.Sleep(time.Second * 1)
-}
+// 	b.Publish("log", "/exit")
+// 	time.Sleep(time.Second * 1)
+// }
