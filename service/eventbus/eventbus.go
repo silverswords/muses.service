@@ -214,6 +214,8 @@ type EventBus struct {
 
 	mux     *ServeMux
 	msgChan chan *redis.Message
+
+	attach map[string][]chan *redis.Message
 }
 
 func init() {
@@ -412,4 +414,36 @@ func (b *EventBus) UnRegister(channel string) {
 func (b *EventBus) Event(channel string, msg interface{}) {
 	data, _ := json.Marshal(msg)
 	b.Publish(channel, data)
+}
+
+//------------------------------------------------------------------------------
+func (b *EventBus) Attach(ch chan *redis.Message, channel string) error {
+	b.attach[channel] = append(b.attach[channel], ch)
+}
+
+func (b *EventBus) Pub(channel string, msg *redis.Message) {
+	for _, v := range b.attach[channel] {
+		v <- msg
+	}
+}
+
+func (b *EventBus) Sub(channel string) {
+	go func() {
+		pubsub := b.redisC.Subscribe(channel)
+		iface, err := pubsub.Receive()
+		if err != nil {
+			return err
+		}
+		switch iface.(type) {
+		case *redis.Subscription:
+			// subscribe succeeded
+		case *redis.Message:
+			go b.Pub(channel, iface)
+		case *redis.Pong:
+			// pong received
+		default:
+			// handle error
+		}
+	}()
+	b.subC[channel] = pubsub
 }
