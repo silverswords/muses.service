@@ -40,7 +40,7 @@ func TestEventBus(t *testing.T) {
 	}
 	// using this to log messages
 	// t.Fail()
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 2)
 
 }
 
@@ -74,23 +74,22 @@ func TestEventBusUrl(t *testing.T) {
 	}
 	// using this to log messages
 	// t.Fail()
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 2)
 	if flag != 1 {
-		t.Error("can't PSub")
+		t.Error("can't close PSub")
 	}
 
 }
 
-func add(a string) { fmt.Println(a) }
-
 func TestEvent(t *testing.T) {
-	evb, err := evb.New()
+	b, err := evb.New()
 	if err != nil {
 		t.Fatal("Couldn't read env url to create evb")
 	}
-	go evb.Register("add", add)
-	evb.Publish("add", "hello")
-	time.Sleep(time.Second * 3)
-	evb.Publish("add", "/exit")
-	t.Fail()
+	go b.Register("log", func(a string) { fmt.Println(a) })
+	time.Sleep(time.Second * 1)
+	b.Publish("log", "hello")
+
+	b.Publish("log", "/exit")
+	time.Sleep(time.Second * 1)
 }

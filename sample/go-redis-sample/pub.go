@@ -8,15 +8,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/go-redis/redis/v7"
 )
 
 type foo struct {
-	boo int `json:"boo"`
-	hei int `json:"hei"`
+	Boo int `json:"boo"`
+	Hei int `json:"hei"`
 }
 
 func main() {
@@ -25,20 +27,25 @@ func main() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	var hello = "hello"
-	// hello := foo{boo: 1, hei: 2}
+	// var hello = "hello"
+	// hello := map[string]int{"hello": 1}
 	// hello := 23.23
+	// msg, _ := json.Marshal(&foo{Boo: 1, Hei: 2})
+	msgH := make(http.Header)
+	msgH.Add("apple", "yellow")
+	msg, _ := json.Marshal(msgH)
+	fmt.Println(msg)
 	go func() {
 		for {
 			t1 := time.Now()
-			client.Publish("room1", hello)
+			client.Publish("/room1", msg)
 			fmt.Println("pub", time.Now().Sub(t1))
 
 			time.Sleep(time.Second)
 		}
 	}()
 
-	pubsub := client.Subscribe("room1")
+	pubsub := client.Subscribe("/room1")
 	_, err := pubsub.Receive()
 	if err != nil {
 		return
@@ -46,7 +53,10 @@ func main() {
 	ch := pubsub.Channel()
 	for msg := range ch {
 		t2 := time.Now()
-		fmt.Println(msg.Channel, msg.Payload)
+		// fmt.Println(msg.Channel, msg.Payload)
+		recvH := make(http.Header)
+		json.Unmarshal([]byte(msg.Payload), &recvH)
+		fmt.Println(recvH.Get("apple"))
 		fmt.Println("sub", time.Now().Sub(t2))
 	}
 

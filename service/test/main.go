@@ -19,10 +19,9 @@ func main() {
 		fmt.Println("Couldn't read env url to create evb")
 	}
 	go evb.Register("add", add)
+	time.Sleep(time.Second * 1)
 	evb.Publish("add", "hello")
-	fmt.Println(time.Now())
 
-	time.Sleep(time.Second * 6)
 	evb.Publish("add", "/exit")
 	time.Sleep(time.Second * 1)
 }

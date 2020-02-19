@@ -56,7 +56,7 @@ type Mux interface {
 // the client sees an interrupted response but the server doesn't log
 // an error, panic with the value ErrAbortHandler.
 type Handler interface {
-	ServeHTTP(http.ResponseWriter, *Request)
+	ServeEvent(*Event)
 }
 
 // http.ResponseWriter
@@ -68,19 +68,17 @@ type Handler interface {
 // ordinary functions as HTTP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(http.ResponseWriter, *Request)
+type HandlerFunc func(*Event)
 
 // ServeHTTP calls f(w, r).
-func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *Request) {
-	f(w, r)
+func (f HandlerFunc) ServeEvent(e *Event) {
+	f(e)
 }
 
-type Request struct {
+type Event struct {
 	*redis.Message
+	http.Header
 }
-
-// NewServeMux allocates and returns a new ServeMux.
-func NewServeMux() *ServeMux { return new(ServeMux) }
 
 type ServeMux struct {
 	mu    sync.RWMutex
@@ -99,8 +97,11 @@ var DefaultServeMux = &defaultServeMux
 
 var defaultServeMux ServeMux
 
+// NewServeMux allocates and returns a new ServeMux.
+func NewServeMux() *ServeMux { return new(ServeMux) }
+
 // HandleFunc registers the handler function for the given pattern.
-func (mux *ServeMux) HandleFunc(pattern string, handler func(http.ResponseWriter, *Request)) {
+func (mux *ServeMux) HandleFunc(pattern string, handler func(*Event)) {
 	if handler == nil {
 		panic("http: nil handler")
 	}
@@ -151,7 +152,7 @@ func appendSorted(es []muxEntry, e muxEntry) []muxEntry {
 	return es
 }
 
-func (b *EventBus) HandleFunc(pattern string, handler func(http.ResponseWriter, *Request)) {
+func HandleFunc(pattern string, handler func(*Event)) {
 	DefaultServeMux.HandleFunc(pattern, handler)
 }
 
@@ -161,7 +162,6 @@ type EventBus struct {
 	// use for unsub target channel
 	subC map[string]*redis.PubSub
 
-	wg  sync.WaitGroup
 	mux ServeMux
 }
 
@@ -324,12 +324,9 @@ func (b *EventBus) Register(channel string, fn interface{}) {
 				// fmt.Println("exit")
 				chatExit = true
 			} else {
-				// t1 := time.Now()
 				passedArguments := make([]reflect.Value, 0)
 				passedArguments = append(passedArguments, reflect.ValueOf(msg.Payload))
 				reflect.ValueOf(fn).Call(passedArguments)
-				fmt.Println(time.Now())
-				// fmt.Println(time.Now().Sub(t1))
 			}
 		default:
 			time.Sleep(100 * time.Millisecond)
