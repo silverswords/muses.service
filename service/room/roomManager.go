@@ -6,7 +6,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// RoomManager -
+// Manager -
 type RoomManager interface {
 	InitRoom(name string) error
 	RemoveRoom(roomID string) error
@@ -106,21 +106,20 @@ func (manager *Manager) LeaveRoom(roomID string, uid string) error {
 }
 
 // SendMessage -
-// func (manager *Manager) SendMessage(roomID string, msg string, uid string) error {
-// 	room, ok := manager.rooms[roomID]
-// 	if !ok {
-// 		return errors.New("room not exsit")
-// 	}
+func (manager *Manager) SendMessage(roomID string, msg string, uid string) error {
+	room, ok := manager.rooms[roomID]
+	if !ok {
+		return errors.New("room not exsit")
+	}
 
-// 	conns := make([]string, 1)
-// 	for i, conn := range room.conns {
-// 		if conn == uid {
-// 			conns = append(room.conns[:i], room.conns[i+1:]...)
-// 		}
-//   }
+	conns := make([]string, 1)
+	for i, conn := range room.conns {
+		if conn == uid {
+			conns = append(room.conns[:i], room.conns[i+1:]...)
+		}
+	}
 
-// 	// send to connctionManager
-//   // eventBus.send("sendMsg", conns)
-
-//   return nil
-// }
+	// send to connctionManager
+	// eventBus.send("sendMsg", conns)
+	return nil
+}
