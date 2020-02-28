@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	"fmt"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -37,7 +38,8 @@ func Init() *Manager {
 }
 
 // InitRoom -
-func (manager *Manager) InitRoom(name string) error {
+func (manager *Manager) InitRoom(payload []byte) error {
+	name := string(payload[:])
 	for _, v := range manager.rooms {
 		if name == v.name {
 			return errors.New("this room is already exist")
@@ -52,6 +54,8 @@ func (manager *Manager) InitRoom(name string) error {
 		num:   0,
 	}
 
+	fmt.Println("========== CreateRoom ==========")
+	fmt.Println(name)
 	return nil
 }
 
@@ -107,17 +111,17 @@ func (manager *Manager) LeaveRoom(roomID string, uid string) error {
 
 // SendMessage -
 func (manager *Manager) SendMessage(roomID string, msg string, uid string) error {
-	room, ok := manager.rooms[roomID]
-	if !ok {
-		return errors.New("room not exsit")
-	}
+	// room, ok := manager.rooms[roomID]
+	// if !ok {
+	// 	return errors.New("room not exsit")
+	// }
 
-	conns := make([]string, 1)
-	for i, conn := range room.conns {
-		if conn == uid {
-			conns = append(room.conns[:i], room.conns[i+1:]...)
-		}
-	}
+	// conns := make([]string, 1)
+	// for i, conn := range room.conns {
+	// 	if conn == uid {
+	// 		conns = append(room.conns[:i], room.conns[i+1:]...)
+	// 	}
+	// }
 
 	// send to connctionManager
 	// eventBus.send("sendMsg", conns)

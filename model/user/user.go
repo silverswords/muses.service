@@ -1,4 +1,4 @@
-package model
+package usermodel
 
 import (
 	"database/sql"
@@ -12,12 +12,6 @@ const (
 	mysqlUserInsert
 	mysqlUserLogin
 )
-
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
-}
 
 var (
 	errInvalidMysql = errors.New("affected 0 rows")
@@ -42,8 +36,6 @@ func CreateTable(db *sql.DB, name, password *string) error {
 	if err != nil {
 		return err
 	}
-
-	Create(db, name, password)
 	return nil
 }
 

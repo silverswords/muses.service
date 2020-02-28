@@ -77,8 +77,8 @@ func (manager *ConnectionManager) Run() {
 	}
 }
 
-// ServeWs - upgrade ws
-func ServeWs(manager *ConnectionManager, w http.ResponseWriter, r *http.Request) {
+// UpGraderWs - upgrade ws
+func UpGraderWs(manager *ConnectionManager, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

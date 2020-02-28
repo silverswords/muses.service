@@ -5,54 +5,28 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"muses.service/handler"
+	"muses.service/handler/room"
+	"muses.service/handler/user"
 	"muses.service/middleware"
+	"muses.service/service/eventbus"
 )
 
-func InitRouter() *gin.Engine {
+func InitRouter(bus eventbus.EventBus) *gin.Engine {
 	r := gin.Default()
+	apiGrp := r.Group("api/v1")
 
 	dbConn, err := sql.Open("mysql", "root:111111@tcp(127.0.0.1:3306)/test")
 	if err != nil {
 		panic(err)
 	}
 
-	adminConn := handler.NewUserDB(dbConn)
-	adminConn.RegisterRouter(r.Group("/api/v1"))
+	userConn := user.NewDB(dbConn)
+	userConn.RegisterRouter(apiGrp.Group("/user"))
 
-	apiGrp(r)
+	roomConn := room.NewDB(dbConn)
+	roomGroup := apiGrp.Group("/room")
+	roomGroup.Use(middleware.MwUser)
+	roomConn.RegisterRouter(roomGroup)
+
 	return r
-}
-
-func apiGrp(r *gin.Engine) {
-	apiGrp := r.Group("/api/v1")
-
-	// users
-	userGrp := apiGrp.Group("/user")
-	userGrp.Use(middleware.MwUser)
-	{
-		userGrp.POST("/joinRoom", handler.Joinroom)
-		userGrp.POST("/leaveRoom")
-		userGrp.POST("/sendMsg")
-
-		userGrp.POST("/removeUser")
-	}
-
-	// room
-	// roomGrp := apiGrp.Group("/room")
-	// {
-	// 	roomGrp.POST("/getRoomList")
-	// 	roomGrp.POST("/getRoomInfo")
-
-	// 	roomGrp.POST("/createRoom")
-	// 	roomGrp.POST("/removeRoom")
-	// }
-
-	// // file
-	// fileGrp := apiGrp.Group("/file")
-	// {
-	// 	fileGrp.POST("/listFile")
-	// 	fileGrp.POST("/uploadFile")
-	// 	fileGrp.POST("/removeFile")
-	// }
 }

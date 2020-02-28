@@ -1,4 +1,4 @@
-package handler
+package user
 
 import (
 	"database/sql"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"muses.service/middleware"
-	"muses.service/model"
+	usermodel "muses.service/model/user"
 )
 
 type Controller struct {
@@ -15,7 +15,7 @@ type Controller struct {
 }
 
 // New create an external service interface
-func NewUserDB(db *sql.DB) *Controller {
+func NewDB(db *sql.DB) *Controller {
 	return &Controller{
 		db: db,
 	}
@@ -28,13 +28,14 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 
 	name := "Admin"
 	password := "111111"
-	err := model.CreateTable(c.db, &name, &password)
+	err := usermodel.CreateTable(c.db, &name, &password)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	r.POST("/register", c.create)
 	r.POST("/login", c.login)
+	r.POST("/sendMsg", c.sendMsg)
 }
 
 func (c *Controller) create(ctx *gin.Context) {
@@ -57,7 +58,7 @@ func (c *Controller) create(ctx *gin.Context) {
 		admin.Password = "111111"
 	}
 
-	err = model.Create(c.db, &admin.Name, &admin.Password)
+	err = usermodel.Create(c.db, &admin.Name, &admin.Password)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -68,8 +69,8 @@ func (c *Controller) create(ctx *gin.Context) {
 }
 
 func (c *Controller) login(ctx *gin.Context) {
-	user := &model.User{}
-	result := &model.Result{
+	user := &usermodel.User{}
+	result := &usermodel.Result{
 		Code:    200,
 		Message: "登录成功",
 		Data:    "",
@@ -81,7 +82,7 @@ func (c *Controller) login(ctx *gin.Context) {
 		return
 	}
 
-	_, err := model.Login(c.db, &user.Name, &user.Password)
+	_, err := usermodel.Login(c.db, &user.Name, &user.Password)
 	if err == nil {
 		if token, err := middleware.JwtGenerateToken(user); err == nil {
 			result.Message = "登录成功"
@@ -104,4 +105,8 @@ func (c *Controller) login(ctx *gin.Context) {
 			"result": result,
 		})
 	}
+}
+
+func (c *Controller) sendMsg(ctx *gin.Context) {
+
 }
