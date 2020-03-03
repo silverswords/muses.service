@@ -17,8 +17,6 @@ const (
 )
 
 var (
-	errInvalidMysql = errors.New("affected 0 rows")
-
 	roomsSQLString = []string{
 		`CREATE TABLE IF NOT EXISTS rooms (
 			id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -30,9 +28,9 @@ var (
 		`INSERT INTO rooms (name, num)  VALUES (?, 0)`,
 		`DELETE FROM rooms WHERE id = ? LIMIT 1`,
 		`SELECT * FROM rooms`
-		`SELECT * FROM rooms WHERE id = ?`
-		`Update rooms SET name = ? WHERE id = ?`,
-		`Update rooms SET num = ? WHERE id = ?`
+		`SELECT id, name, num, created_at FROM rooms WHERE id = ? limit 1 lock in share mode`
+		`Update rooms SET name = ? WHERE id = ? LIMIT 1`,
+		`Update rooms SET num = ? WHERE id = ? LIMIT 1`
 	}
 )
 

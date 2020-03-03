@@ -19,9 +19,11 @@ var (
 
 	adminSQLString = []string{
 		`CREATE TABLE IF NOT EXISTS user (
-			id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			name     	VARCHAR(512) UNIQUE NOT NULL DEFAULT ' ',
-			password 	VARCHAR(512) NOT NULL DEFAULT ' ',
+			id          VARCHAR(512) UNIQUE NOT NULL,
+			name        VARCHAR(512) UNIQUE NOT NULL DEFAULT 'XXX',
+			password    VARCHAR(512) NOT NULL DEFAULT '123',
+			role        VARCHAR(512) NOT NULL
+			is_busy     BOOL
 			created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id)
 		) ENGINE=InnoDB AUTO_INCREMENT=1000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;`,
@@ -30,7 +32,7 @@ var (
 	}
 )
 
-// CreateTable create admin table.
+// CreateTable create user table.
 func CreateTable(db *sql.DB, name, password *string) error {
 	_, err := db.Exec(adminSQLString[mysqlUserCreateTable])
 	if err != nil {

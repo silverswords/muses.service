@@ -2,12 +2,12 @@ package apis
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"muses.service/handler/room"
+	"gopkg.in/gorp.v1"
 	"muses.service/handler/user"
-	"muses.service/middleware"
 	"muses.service/service/eventbus"
 )
 
@@ -16,17 +16,30 @@ func InitRouter(bus eventbus.EventBus) *gin.Engine {
 	apiGrp := r.Group("api/v1")
 
 	dbConn, err := sql.Open("mysql", "root:111111@tcp(127.0.0.1:3306)/test")
+	dbmap := &gorp.DbMap{Db: dbConn, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
+
+	err = dbmap.TruncateTables()
+	checkErr(err, "TruncateTables failed")
+
 	if err != nil {
 		panic(err)
 	}
 
-	userConn := user.NewDB(dbConn)
+	userConn := user.NewDB(dbmap)
 	userConn.RegisterRouter(apiGrp.Group("/user"))
 
-	roomConn := room.NewDB(dbConn)
-	roomGroup := apiGrp.Group("/room")
-	roomGroup.Use(middleware.MwUser)
-	roomConn.RegisterRouter(roomGroup)
+	// roomConn := room.NewDB(dbConn)
+	// roomGroup := apiGrp.Group("/room")
+	// roomGroup.Use(middleware.MwUser)
+	// roomConn.RegisterRouter(roomGroup)
 
+	err = dbmap.CreateTablesIfNotExists()
+	checkErr(err, "Create tables failed")
 	return r
+}
+
+func checkErr(err error, msg string) {
+	if err != nil {
+		log.Fatalln(msg, err)
+	}
 }

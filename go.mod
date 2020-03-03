@@ -12,10 +12,14 @@ require (
 	github.com/go-redis/redis/v7 v7.1.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gorilla/websocket v1.4.1
+	github.com/lib/pq v1.3.0 // indirect
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/satori/uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/yhyddr/redbus v0.0.0-20200223085552-94e89ed38a6b
+	github.com/ziutek/mymysql v1.5.4 // indirect
+	gopkg.in/gorp.v1 v1.7.2
 )

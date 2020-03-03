@@ -1,37 +1,48 @@
 package user
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
+	"gopkg.in/gorp.v1"
 	"muses.service/middleware"
-	usermodel "muses.service/model/user"
 )
 
+// Controller -
 type Controller struct {
-	db *sql.DB
+	dbmap *gorp.DbMap
 }
 
-// New create an external service interface
-func NewDB(db *sql.DB) *Controller {
+// Person -
+type Person struct {
+	UserID   uuid.UUID
+	Created  int64
+	Name     string
+	Password string
+	Role     string
+	IsBusy   bool
+}
+
+// NewDB -
+func NewDB(dbmap *gorp.DbMap) *Controller {
 	return &Controller{
-		db: db,
+		dbmap: dbmap,
 	}
 }
 
+// RegisterRouter -
 func (c *Controller) RegisterRouter(r gin.IRouter) {
 	if r == nil {
 		log.Fatal("[InitRouter]: server is nil")
 	}
 
-	name := "Admin"
-	password := "111111"
-	err := usermodel.CreateTable(c.db, &name, &password)
-	if err != nil {
-		log.Fatal(err)
-	}
+	c.dbmap.AddTableWithName(Person{}, "person").SetKeys(false, "UserID")
+
+	fmt.Print("create person")
 
 	r.POST("/register", c.create)
 	r.POST("/login", c.login)
@@ -40,71 +51,89 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 
 func (c *Controller) create(ctx *gin.Context) {
 	var (
-		admin struct {
+		user struct {
 			Name     string `json:"name"      binding:"required,alphanum,min=5,max=30"`
 			Password string `json:"password"  binding:"omitempty,min=5,max=30"`
+			Role     string `json:"role"`
+			IsBusy   bool   `json:"isbusy"`
 		}
 	)
 
-	err := ctx.ShouldBind(&admin)
+	err := ctx.ShouldBind(&user)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
 		return
 	}
 
-	//Default password
-	if admin.Password == "" {
-		admin.Password = "111111"
+	//Default user
+	if user.Password == "" && user.Name == "" {
+		user.Password = "123456"
+		user.Name = "XXX"
 	}
 
-	err = usermodel.Create(c.db, &admin.Name, &admin.Password)
+	person := Person{
+		UserID:   uuid.NewV4(),
+		Created:  time.Now().UnixNano(),
+		Name:     user.Name,
+		Password: user.Password,
+		Role:     user.Role,
+		IsBusy:   user.IsBusy,
+	}
+
+	err = c.dbmap.Insert(&person)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": http.StatusOK})
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+	})
 }
 
+// Login -
 func (c *Controller) login(ctx *gin.Context) {
-	user := &usermodel.User{}
-	result := &usermodel.Result{
-		Code:    200,
-		Message: "登录成功",
-		Data:    "",
-	}
+	var (
+		user struct {
+			Name     string `json:"name"      binding:"required,alphanum,min=5,max=30"`
+			Password string `json:"password"  binding:"omitempty,min=5,max=30"`
+			Role     string `json:"role"`
+		}
+	)
 
-	if err := ctx.ShouldBindJSON(&user); err != nil {
+	err := ctx.ShouldBind(&user)
+	if err != nil {
 		ctx.Error(err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": http.StatusBadRequest})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
 		return
 	}
 
-	_, err := usermodel.Login(c.db, &user.Name, &user.Password)
-	if err == nil {
-		if token, err := middleware.JwtGenerateToken(user); err == nil {
-			result.Message = "登录成功"
-			result.Data = "Bearer " + token
-			result.Code = http.StatusOK
-			ctx.JSON(result.Code, gin.H{
-				"result": result,
-			})
-		} else {
-			result.Message = "登录失败"
-			result.Code = http.StatusOK
-			ctx.JSON(result.Code, gin.H{
-				"result": result,
-			})
-		}
-	} else {
-		result.Message = "登录失败"
-		result.Code = http.StatusOK
-		ctx.JSON(result.Code, gin.H{
-			"result": result,
-		})
+	person := Person{
+		Name:     user.Name,
+		Password: user.Password,
+		Role:     user.Role,
 	}
+
+	err = c.dbmap.SelectOne(&person, "select * from person where name=? and password=? and role = ? limit 1", person.Name, person.Password, person.Role)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	token, err := middleware.JwtGenerateToken(person.UserID.String())
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"data":   token,
+	})
 }
 
 func (c *Controller) sendMsg(ctx *gin.Context) {
