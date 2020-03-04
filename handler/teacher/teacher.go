@@ -19,7 +19,7 @@ type Controller struct {
 
 // Student -
 type Teacher struct {
-	UserID   uuid.UUID
+	UserID   string
 	Created  int64
 	Name     string
 	Password string
@@ -45,6 +45,8 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	fmt.Print("create person")
 
 	r.POST("/create", c.create)
+	r.POST("/changename", c.changeName)
+	r.POST("/changePassword", c.changePassword)
 	r.POST("/login", c.login)
 	r.POST("/sendMsg", c.sendMsg)
 }
@@ -73,7 +75,7 @@ func (c *Controller) create(ctx *gin.Context) {
 	}
 
 	person := Teacher{
-		UserID:   uuid.NewV4(),
+		UserID:   uuid.NewV4().String(),
 		Created:  time.Now().UnixNano(),
 		Name:     user.Name,
 		Password: user.Password,
@@ -133,6 +135,70 @@ func (c *Controller) login(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 		"data":   token,
+	})
+}
+
+func (c *Controller) changeName(ctx *gin.Context) {
+	var (
+		user struct {
+			ID   string `json:"id"`
+			Name string `json:"name"      binding:"required,alphanum,min=5,max=30"`
+		}
+	)
+
+	err := ctx.ShouldBind(&user)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	person := Teacher{
+		UserID: user.ID,
+		Name: user.Name,
+	}
+
+	err := c.dbmap.Update(&person)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK
+	})
+}
+
+func (c *Controller) changePassword(ctx *gin.Context) {
+	var (
+		user struct {
+			ID   string `json:"id"`
+			Password string `json:"password"      binding:"required,alphanum,min=5,max=30"`
+		}
+	)
+
+	err := ctx.ShouldBind(&user)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	person := Teacher{
+		UserID: user.ID,
+		Password: user.Password,
+	}
+
+	err := c.dbmap.Update(&person)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK
 	})
 }
 
