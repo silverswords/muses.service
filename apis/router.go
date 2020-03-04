@@ -7,7 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/gorp.v1"
-	"muses.service/handler/user"
+	"muses.service/handler/student"
+	"muses.service/handler/teacher"
 	"muses.service/service/eventbus"
 )
 
@@ -25,8 +26,11 @@ func InitRouter(bus eventbus.EventBus) *gin.Engine {
 		panic(err)
 	}
 
-	userConn := user.NewDB(dbmap)
-	userConn.RegisterRouter(apiGrp.Group("/user"))
+	studentConn := student.NewDB(dbmap)
+	studentConn.RegisterRouter(apiGrp.Group("/student"))
+
+	teacherConn := teacher.NewDB(dbmap)
+	teacherConn.RegisterRouter(apiGrp.Group("/teacher"))
 
 	// roomConn := room.NewDB(dbConn)
 	// roomGroup := apiGrp.Group("/room")

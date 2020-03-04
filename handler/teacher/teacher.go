@@ -1,4 +1,4 @@
-package user
+package teacher
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ type Controller struct {
 	dbmap *gorp.DbMap
 }
 
-// Person -
-type Person struct {
+// Student -
+type Teacher struct {
 	UserID   uuid.UUID
 	Created  int64
 	Name     string
@@ -40,11 +40,11 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 		log.Fatal("[InitRouter]: server is nil")
 	}
 
-	c.dbmap.AddTableWithName(Person{}, "person").SetKeys(false, "UserID")
+	c.dbmap.AddTableWithName(Teacher{}, "teacher").SetKeys(false, "UserID")
 
 	fmt.Print("create person")
 
-	r.POST("/register", c.create)
+	r.POST("/create", c.create)
 	r.POST("/login", c.login)
 	r.POST("/sendMsg", c.sendMsg)
 }
@@ -72,7 +72,7 @@ func (c *Controller) create(ctx *gin.Context) {
 		user.Name = "XXX"
 	}
 
-	person := Person{
+	person := Teacher{
 		UserID:   uuid.NewV4(),
 		Created:  time.Now().UnixNano(),
 		Name:     user.Name,
@@ -110,7 +110,7 @@ func (c *Controller) login(ctx *gin.Context) {
 		return
 	}
 
-	person := Person{
+	person := Teacher{
 		Name:     user.Name,
 		Password: user.Password,
 		Role:     user.Role,

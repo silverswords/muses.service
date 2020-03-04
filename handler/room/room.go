@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"muses.service/model/room"
+	roommodel "muses.service/model/room"
 )
 
 type Controller struct {
@@ -26,9 +26,9 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	}
 
 	r.POST("/createRoom", c.createRoom)
-	r.POST("/deleteRoom" c.deleteRoom)
-	r.POST("/joinRoom", c.joinRoom)
-	r.POST("/leaveRoom", c.leaveRoom)
+	r.POST("/deleteRoom", c.deleteRoom)
+	// r.POST("/joinRoom", c.joinRoom)
+	// r.POST("/leaveRoom", c.leaveRoom)
 	r.POST("/updateRoomName", c.updateRoomName)
 	r.POST("/getRooms", c.getRooms)
 	r.POST("/getRoomByID", c.getRoomInfo)
@@ -48,7 +48,7 @@ func (c *Controller) createRoom(ctx *gin.Context) {
 		return
 	}
 
-	err := roommodel.CreateRoom(c.db, &newRoom.Name)
+	err = roommodel.CreateRoom(c.db, newRoom.Name)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -72,7 +72,7 @@ func (c *Controller) deleteRoom(ctx *gin.Context) {
 		return
 	}
 
-	err := roommodel.DeleteRoom(c.db, &newRoom.ID)
+	err = roommodel.DeleteRoom(c.db, newRoom.ID)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -85,7 +85,7 @@ func (c *Controller) deleteRoom(ctx *gin.Context) {
 func (c *Controller) updateRoomName(ctx *gin.Context) {
 	var (
 		newRoom struct {
-			ID uint `json: "id"`
+			ID   int    `json: "id"`
 			Name string `json: "name"`
 		}
 	)
@@ -97,7 +97,7 @@ func (c *Controller) updateRoomName(ctx *gin.Context) {
 		return
 	}
 
-	err := roommodel.UpdateRoomName(c.db, &newRoom.ID, &newRoom.name)
+	err = roommodel.UpdateRoomName(c.db, newRoom.ID, newRoom.Name)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -171,5 +171,3 @@ func (c *Controller) getRoomInfo(ctx *gin.Context) {
 // 		"result": result,
 // 	})
 // }
-
-
