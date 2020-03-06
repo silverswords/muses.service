@@ -17,7 +17,7 @@ type Controller struct {
 	dbmap *gorp.DbMap
 }
 
-// Student -
+// Teacher -
 type Teacher struct {
 	UserID   string
 	Created  int64
@@ -45,6 +45,7 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	fmt.Print("create person")
 
 	r.POST("/create", c.create)
+	r.POST("/remove", c.remove)
 	r.POST("/changename", c.changeName)
 	r.POST("/changePassword", c.changePassword)
 	r.POST("/login", c.login)
@@ -95,6 +96,36 @@ func (c *Controller) create(ctx *gin.Context) {
 	})
 }
 
+func (c *Controller) remove(ctx *gin.Context) {
+	var (
+		user struct {
+			UserID string `json:"userID"`
+		}
+	)
+
+	err := ctx.ShouldBind(&user)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	teacher := Teacher{
+		UserID: user.UserID,
+	}
+
+	_, err = c.dbmap.Delete(&teacher)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+	})
+}
+
 // Login -
 func (c *Controller) login(ctx *gin.Context) {
 	var (
@@ -125,7 +156,7 @@ func (c *Controller) login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := middleware.JwtGenerateToken(person.UserID.String())
+	token, err := middleware.JwtGenerateToken(person.UserID)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -155,10 +186,10 @@ func (c *Controller) changeName(ctx *gin.Context) {
 
 	person := Teacher{
 		UserID: user.ID,
-		Name: user.Name,
+		Name:   user.Name,
 	}
 
-	err := c.dbmap.Update(&person)
+	_, err = c.dbmap.Update(&person)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -166,14 +197,14 @@ func (c *Controller) changeName(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK
+		"status": http.StatusOK,
 	})
 }
 
 func (c *Controller) changePassword(ctx *gin.Context) {
 	var (
 		user struct {
-			ID   string `json:"id"`
+			ID       string `json:"id"`
 			Password string `json:"password"      binding:"required,alphanum,min=5,max=30"`
 		}
 	)
@@ -186,11 +217,11 @@ func (c *Controller) changePassword(ctx *gin.Context) {
 	}
 
 	person := Teacher{
-		UserID: user.ID,
+		UserID:   user.ID,
 		Password: user.Password,
 	}
 
-	err := c.dbmap.Update(&person)
+	_, err = c.dbmap.Update(&person)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -198,7 +229,7 @@ func (c *Controller) changePassword(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"status": http.StatusOK
+		"status": http.StatusOK,
 	})
 }
 

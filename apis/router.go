@@ -7,11 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/gorp.v1"
+	"muses.service/handler/room"
 	"muses.service/handler/student"
 	"muses.service/handler/teacher"
 	"muses.service/service/eventbus"
 )
 
+// InitRouter -
 func InitRouter(bus eventbus.EventBus) *gin.Engine {
 	r := gin.Default()
 	apiGrp := r.Group("api/v1")
@@ -32,10 +34,10 @@ func InitRouter(bus eventbus.EventBus) *gin.Engine {
 	teacherConn := teacher.NewDB(dbmap)
 	teacherConn.RegisterRouter(apiGrp.Group("/teacher"))
 
-	// roomConn := room.NewDB(dbConn)
-	// roomGroup := apiGrp.Group("/room")
+	roomConn := room.NewDB(dbmap)
+	roomGroup := apiGrp.Group("/room")
 	// roomGroup.Use(middleware.MwUser)
-	// roomConn.RegisterRouter(roomGroup)
+	roomConn.RegisterRouter(roomGroup)
 
 	err = dbmap.CreateTablesIfNotExists()
 	checkErr(err, "Create tables failed")
