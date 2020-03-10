@@ -36,15 +36,15 @@ var upgrader = websocket.Upgrader{
 // Client - connection
 type Client struct {
 	id      string
-	manager *ConnectionManager
+	manager *Manager
 	conn    *websocket.Conn
 	send    chan []byte
 }
 
 // ConnectionManager - manager connections
-type ConnectionManager struct {
+type Manager struct {
 	// Registered clients.
-	connections map[string]*Client
+	Connections map[string]*Client
 
 	// Register requests from the clients.
 	register chan *Client
@@ -54,23 +54,23 @@ type ConnectionManager struct {
 }
 
 // NewConnectionManager -
-func NewConnectionManager() *ConnectionManager {
-	return &ConnectionManager{
+func NewConnectionManager() *Manager {
+	return &Manager{
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
-		connections: make(map[string]*Client),
+		Connections: make(map[string]*Client),
 	}
 }
 
 // Run -
-func (manager *ConnectionManager) Run() {
+func (manager *Manager) Run() {
 	for {
 		select {
 		case client := <-manager.register:
-			manager.connections[client.id] = client
+			manager.Connections[client.id] = client
 		case client := <-manager.unregister:
-			if _, ok := manager.connections[client.id]; ok {
-				delete(manager.connections, client.id)
+			if _, ok := manager.Connections[client.id]; ok {
+				delete(manager.Connections, client.id)
 				close(client.send)
 			}
 		}
@@ -78,7 +78,7 @@ func (manager *ConnectionManager) Run() {
 }
 
 // UpGraderWs - upgrade ws
-func UpGraderWs(manager *ConnectionManager, w http.ResponseWriter, r *http.Request) {
+func UpGraderWs(manager *Manager, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

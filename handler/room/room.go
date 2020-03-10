@@ -25,12 +25,6 @@ type Room struct {
 	Created   int64
 }
 
-// Manager -
-type Manager struct {
-	RoomID string
-	UserID string
-}
-
 // NewDB -
 func NewDB(dbmap *gorp.DbMap) *Controller {
 	return &Controller{
@@ -45,7 +39,6 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	}
 
 	c.dbmap.AddTableWithName(Room{}, "room").SetKeys(false, "RoomID")
-	c.dbmap.AddTableWithName(Manager{}, "roomManger").SetKeys(false, "RoomID")
 
 	r.POST("/createRoom", c.createRoom)
 	r.POST("/removeRoom", c.removeRoom)
@@ -59,7 +52,7 @@ func (c *Controller) createRoom(ctx *gin.Context) {
 			Name      string `json:"name"`
 			Info      string `json:"info"`
 			Location  string `json:"loacton"`
-			MaxNumber int64  `json:""maxNumber`
+			MaxNumber int64  `json:"maxNumber"`
 		}
 	)
 
@@ -94,7 +87,7 @@ func (c *Controller) createRoom(ctx *gin.Context) {
 func (c *Controller) removeRoom(ctx *gin.Context) {
 	var (
 		roomID struct {
-			ID string `json: "id"`
+			ID string `json:"id"`
 		}
 	)
 
