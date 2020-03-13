@@ -11,11 +11,11 @@ import (
 
 // Manager -
 type Manager struct {
-	Rooms            map[string]room
+	Rooms            map[string]Room
 	connetionManager connection.Manager
 }
 
-type room struct {
+type Room struct {
 	RoomID  string
 	Persons []string
 }
@@ -23,7 +23,7 @@ type room struct {
 // NewManger -
 func NewManger(connetionManager *connection.Manager) *Manager {
 	return &Manager{
-		Rooms:            make(map[string]room),
+		Rooms:            make(map[string]Room),
 		connetionManager: *connetionManager,
 	}
 }
@@ -54,13 +54,11 @@ func (m *Manager) openRoom(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println(roomID.ID)
-
-	m.Rooms[roomID.ID] = room{
-		RoomID: roomID.ID,
+	m.Rooms[roomID.ID] = Room{
+		RoomID:  roomID.ID,
+		Persons: make([]string, 0),
 	}
 
-	fmt.Println(m.Rooms)
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 	})
@@ -81,7 +79,6 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println(m.Rooms)
 	room, ok := m.Rooms[param.RoomID]
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -92,18 +89,11 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
-	// _, ok = connection.Manager.Connections[param.UserID]
-	// if !ok {
-	// 	ctx.Error(err)
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"status": http.StatusBadRequest,
-	// 		"msg":    "connection not exited",
-	// 	})
-	// 	return
-	// }
+	room.Persons = append(m.Rooms[param.RoomID].Persons, param.UserID)
 
-	_ = append(room.Persons, param.UserID)
+	m.Rooms[param.RoomID] = room
 
+	fmt.Println(m.Rooms[param.RoomID], "after append")
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 	})
@@ -112,9 +102,9 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 func (m *Manager) sendMes(ctx *gin.Context) {
 	var (
 		msg struct {
-			userid  string `json: "id"`
-			roomid  string `json: "roomid"`
-			content string `json: "content"`
+			ID      string `json: "id"`
+			RoomID  string `json: "roomid"`
+			Content string `json: "content"`
 		}
 	)
 
@@ -125,7 +115,8 @@ func (m *Manager) sendMes(ctx *gin.Context) {
 		return
 	}
 
-	room, ok := m.Rooms[msg.roomid]
+	fmt.Println(msg.RoomID)
+	room, ok := m.Rooms[msg.RoomID]
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status": http.StatusBadRequest,
@@ -135,14 +126,7 @@ func (m *Manager) sendMes(ctx *gin.Context) {
 		return
 	}
 
-	ret := make([]string, 0, len(room.Persons))
-	for _, val := range room.Persons {
-		if val != msg.userid {
-			ret = append(ret, val)
-		}
-	}
-
-	go m.connetionManager.SubMsg(ret, msg.content)
+	go m.connetionManager.SubMsg(room.Persons, msg.Content)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,

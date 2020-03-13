@@ -15,8 +15,8 @@ type Controller struct {
 	dbmap *gorp.DbMap
 }
 
-// Room -
-type Room struct {
+// RoomModel -
+type RoomModel struct {
 	RoomID    string
 	Name      string
 	Info      string
@@ -38,7 +38,7 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 		log.Fatal("[InitRouter]: server is nil")
 	}
 
-	c.dbmap.AddTableWithName(Room{}, "room").SetKeys(false, "RoomID")
+	c.dbmap.AddTableWithName(RoomModel{}, "room").SetKeys(false, "RoomID")
 
 	r.POST("/createRoom", c.createRoom)
 	r.POST("/removeRoom", c.removeRoom)
@@ -63,7 +63,7 @@ func (c *Controller) createRoom(ctx *gin.Context) {
 		return
 	}
 
-	room := Room{
+	room := RoomModel{
 		RoomID:    uuid.NewV4().String(),
 		Name:      roomBasic.Name,
 		Info:      roomBasic.Info,
@@ -98,7 +98,7 @@ func (c *Controller) removeRoom(ctx *gin.Context) {
 		return
 	}
 
-	room := Room{
+	room := RoomModel{
 		RoomID: roomID.ID,
 	}
 
@@ -115,7 +115,7 @@ func (c *Controller) removeRoom(ctx *gin.Context) {
 }
 
 func (c *Controller) listRoom(ctx *gin.Context) {
-	var rooms []Room
+	var rooms []RoomModel
 	_, err := c.dbmap.Select(&rooms, "select * from room")
 	if err != nil {
 		ctx.Error(err)
@@ -147,7 +147,7 @@ func (c *Controller) modifyRoom(ctx *gin.Context) {
 		return
 	}
 
-	room := Room{
+	room := RoomModel{
 		RoomID:    roomBasic.ID,
 		Name:      roomBasic.Name,
 		Info:      roomBasic.Info,

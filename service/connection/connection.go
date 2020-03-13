@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"muses.service/middleware"
 )
 
 const (
@@ -94,16 +92,9 @@ func (manager *Manager) UpGraderWs(ctx *gin.Context) {
 		log.Println(err)
 	}
 
-	hToken := ctx.GetHeader("Authorization")
-	if len(hToken) < len("Bearer ") {
-		ctx.AbortWithStatusJSON(http.StatusPreconditionFailed, gin.H{"msg": "header Authorization has not Bearer token"})
-	}
-	token := strings.TrimSpace(hToken[len("Bearer ") : len(hToken)-1])
+	userID := ctx.Query("id")
 
-	usrID, _ := middleware.JwtParseUser(token)
-	fmt.Println(usrID)
-
-	client := &Client{id: usrID, manager: manager, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{id: userID, manager: manager, conn: conn, send: make(chan []byte, 256)}
 	client.manager.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
@@ -121,6 +112,7 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
+			fmt.Println(message)
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
