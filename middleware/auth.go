@@ -27,7 +27,7 @@ func ctxTokenToUser(c *gin.Context) {
 	}
 
 	println(token)
-	usrID, err := jwtParseUser(token)
+	usrID, err := JwtParseUser(token)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusPreconditionFailed, gin.H{"msg": err.Error()})
 		return
@@ -62,7 +62,7 @@ func JwtGenerateToken(ID string) (string, error) {
 	stdClaims := jwt.StandardClaims{
 		ExpiresAt: expireTime.Unix(),
 		IssuedAt:  time.Now().Unix(),
-		Id:        fmt.Sprintf("%d", ID),
+		Id:        ID,
 	}
 
 	uClaims := userStdClaims{
@@ -78,7 +78,7 @@ func JwtGenerateToken(ID string) (string, error) {
 	return tokenString, err
 }
 
-func jwtParseUser(tokenString string) (string, error) {
+func JwtParseUser(tokenString string) (string, error) {
 	if tokenString == "" {
 		return "error", errors.New("no token is found in Authorization Bearer")
 	}

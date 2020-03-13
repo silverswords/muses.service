@@ -29,10 +29,10 @@
         var ws;
 
         function toggleURLS(wsurl) {
-            if (wsurl == "ws://localhost:8081/echo") {
-                return "ws://localhost:8082/echo"
-            }
-            return "ws://localhost:8081/echo"
+            // if (wsurl == "ws://localhost:8081/echo") {
+            //     return "ws://localhost:8082/echo"
+            // }
+            return "ws://localhost:8080/ws"
         }
 
         var wsurl = toggleURLS("")
@@ -43,7 +43,7 @@
 
             output.innerHTML = message
         };
-        // document.getElementById("open").onclick = onOpn;
+        document.getElementById("open").onclick = onOpn;
 
         var onOpn = function(evt) {
 
@@ -52,6 +52,7 @@
                 return false;
             }
             ws = new WebSocket(wsurl);
+            console.log("connection success")
             ws.onopen = function(evt) {
                 print("OPEN");
             }
@@ -90,16 +91,16 @@
             return false;
         };
         var i = 0
-        setInterval(function() {
-            if (!ws) {
-                onOpn()
-                // document.getElementById("open").click()
-            } else {
-                onSnd()
-                // document.getElementById("send").click()
-            }
-            i++
-        }, 500);
+        // setInterval(function() {
+        //     if (!ws) {
+        //         onOpn()
+        //         // document.getElementById("open").click()
+        //     } else {
+        //         onSnd()
+        //         // document.getElementById("send").click()
+        //     }
+        //     i++
+        // }, 500);
     });
     </script>
 </head>

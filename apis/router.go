@@ -10,11 +10,11 @@ import (
 	"muses.service/handler/room"
 	"muses.service/handler/student"
 	"muses.service/handler/teacher"
-	"muses.service/service/eventbus"
+	"muses.service/service/connection"
 )
 
 // InitRouter -
-func InitRouter(bus eventbus.EventBus) *gin.Engine {
+func InitRouter() *gin.Engine {
 	r := gin.Default()
 	apiGrp := r.Group("api/v1")
 
@@ -28,12 +28,25 @@ func InitRouter(bus eventbus.EventBus) *gin.Engine {
 		panic(err)
 	}
 
+	// connection
+	connetionManager := connection.NewConnectionManager()
+	go connetionManager.Run()
+
+	r.GET("/ws", connetionManager.UpGraderWs)
+
+	// student apis
 	studentConn := student.NewDB(dbmap)
 	studentConn.RegisterRouter(apiGrp.Group("/student"))
 
+	// teacher apis
 	teacherConn := teacher.NewDB(dbmap)
 	teacherConn.RegisterRouter(apiGrp.Group("/teacher"))
 
+	// roomManager apis
+	roomManger := room.NewManger(connetionManager)
+	roomManger.RegisterRouter(apiGrp.Group("/room"))
+
+	// room apis
 	roomConn := room.NewDB(dbmap)
 	roomGroup := apiGrp.Group("/room")
 	// roomGroup.Use(middleware.MwUser)

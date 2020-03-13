@@ -1,12 +1,15 @@
 package connection
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	uuid "github.com/satori/go.uuid"
+	"muses.service/middleware"
 )
 
 const (
@@ -41,7 +44,7 @@ type Client struct {
 	send    chan []byte
 }
 
-// ConnectionManager - manager connections
+// Manager - manager connections
 type Manager struct {
 	// Registered clients.
 	Connections map[string]*Client
@@ -78,15 +81,29 @@ func (manager *Manager) Run() {
 }
 
 // UpGraderWs - upgrade ws
-func UpGraderWs(manager *Manager, w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func (manager *Manager) UpGraderWs(ctx *gin.Context) {
+	var upgrader = websocket.Upgrader{
+		// 解决跨域问题
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
 		log.Println(err)
-		return
 	}
-	newID := uuid.NewV4()
 
-	client := &Client{id: newID.String(), manager: manager, conn: conn, send: make(chan []byte, 256)}
+	hToken := ctx.GetHeader("Authorization")
+	if len(hToken) < len("Bearer ") {
+		ctx.AbortWithStatusJSON(http.StatusPreconditionFailed, gin.H{"msg": "header Authorization has not Bearer token"})
+	}
+	token := strings.TrimSpace(hToken[len("Bearer ") : len(hToken)-1])
+
+	usrID, _ := middleware.JwtParseUser(token)
+	fmt.Println(usrID)
+
+	client := &Client{id: usrID, manager: manager, conn: conn, send: make(chan []byte, 256)}
 	client.manager.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
@@ -132,6 +149,16 @@ func (c *Client) WritePump() {
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+		}
+	}
+}
+
+// SubMsg -
+func (manager *Manager) SubMsg(users []string, msg string) {
+	for _, v := range users {
+		client, ok := manager.Connections[v]
+		if ok {
+			client.send <- []byte(msg)
 		}
 	}
 }

@@ -47,7 +47,6 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	r.GET("/tourist", c.createTourist)
 	r.POST("/changePassword", c.changePassword)
 	r.POST("/changename", c.changeName)
-	r.POST("/sendMsg", c.sendMsg)
 }
 
 func (c *Controller) create(ctx *gin.Context) {
@@ -170,7 +169,7 @@ func (c *Controller) login(ctx *gin.Context) {
 		Role:     user.Role,
 	}
 
-	err = c.dbmap.SelectOne(&person, "select * from person where name=? and password=? and role = ? limit 1", person.Name, person.Password, person.Role)
+	err = c.dbmap.SelectOne(&person, "select * from student where name=? and password=? limit 1", person.Name, person.Password)
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
@@ -252,8 +251,4 @@ func (c *Controller) changePassword(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 	})
-}
-
-func (c *Controller) sendMsg(ctx *gin.Context) {
-
 }
