@@ -89,9 +89,23 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
+<<<<<<< Updated upstream
 	room.Persons = append(m.Rooms[param.RoomID].Persons, param.UserID)
 
 	m.Rooms[param.RoomID] = room
+=======
+	// _, ok = connection.Manager.Connections[param.UserID]
+	// if !ok {
+	// 	ctx.Error(err)
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{
+	// 		"status": http.StatusBadRequest,
+	// 		"msg":    "connection not exited",
+	// 	})
+	// 	return
+	// }
+	m.Rooms[param.RoomID].Persons = append(m.Rooms[param.RoomID].Persons,param.UserID)
+	//_ = append(room.Persons, param.UserID)
+>>>>>>> Stashed changes
 
 	fmt.Println(m.Rooms[param.RoomID], "after append")
 	ctx.JSON(http.StatusOK, gin.H{
