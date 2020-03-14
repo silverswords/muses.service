@@ -1,7 +1,6 @@
 package room
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -54,9 +53,15 @@ func (m *Manager) openRoom(ctx *gin.Context) {
 		return
 	}
 
-	m.Rooms[roomID.ID] = Room{
-		RoomID:  roomID.ID,
-		Persons: make([]string, 0),
+	_, ok := m.Rooms[roomID.ID]
+	if !ok {
+		m.Rooms[roomID.ID] = Room{
+			RoomID:  roomID.ID,
+			Persons: make([]string, 0),
+		}
+	} else {
+		ctx.JSON(http.StatusNotAcceptable, gin.H{"msg": "room already open"})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -89,15 +94,16 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
-	// _, ok = connection.Manager.Connections[param.UserID]
-	// if !ok {
-	// 	ctx.Error(err)
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"status": http.StatusBadRequest,
-	// 		"msg":    "connection not exited",
-	// 	})
-	// 	return
-	// }
+	_, ok = m.connetionManager.Manager.Connections[param.UserID]
+	if !ok {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status": http.StatusBadRequest,
+			"msg":    "connection not exited",
+		})
+		return
+	}
+
 	m.Rooms[param.RoomID].Persons = append(m.Rooms[param.RoomID].Persons, param.UserID)
 
 	ctx.JSON(http.StatusOK, gin.H{
@@ -121,7 +127,6 @@ func (m *Manager) sendMes(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println(msg.RoomID)
 	room, ok := m.Rooms[msg.RoomID]
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{

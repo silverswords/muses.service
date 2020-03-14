@@ -25,6 +25,13 @@ type RoomModel struct {
 	Created   int64
 }
 
+// TeachertoclassModel -
+type TeachertoclassModel struct {
+	UserID   string
+	RoomID   string
+	Loaction string
+}
+
 // NewDB -
 func NewDB(dbmap *gorp.DbMap) *Controller {
 	return &Controller{
@@ -39,11 +46,16 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	}
 
 	c.dbmap.AddTableWithName(RoomModel{}, "room").SetKeys(false, "RoomID")
+	c.dbmap.AddTableWithName(TeachertoclassModel{}, "teacherToRoom").SetKeys(false, "UserID")
 
 	r.POST("/createRoom", c.createRoom)
 	r.POST("/removeRoom", c.removeRoom)
 	r.GET("/listRoom", c.listRoom)
 	r.POST("/modifyRoom", c.modifyRoom)
+	r.POST("/bindRoom", c.bindRoom)
+	r.POST("/removeBind", c.removeBindRoom)
+	r.POST("/modifyBind", c.modifyBind)
+	r.POST("/listBind", c.listBind)
 }
 
 func (c *Controller) createRoom(ctx *gin.Context) {
@@ -164,5 +176,118 @@ func (c *Controller) modifyRoom(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
+	})
+}
+
+func (c *Controller) bindRoom(ctx *gin.Context) {
+	var (
+		prama struct {
+			UserID   string `json: "userid"`
+			RoomID   string `json: "roomid"`
+			Loaction string `json: loaction`
+		}
+	)
+
+	err := ctx.ShouldBind(&prama)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	bind := TeachertoclassModel{
+		RoomID:   prama.UserID,
+		RoomID:   prama.RoomID,
+		Loaction: prama.Loaction,
+	}
+
+	err = c.dbmap.Insert(&bind)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+	})
+}
+
+func (c *Controller) removeBind(ctx *gin.Context) {
+	var (
+		prama struct {
+			UserID string `json:"userid"`
+		}
+	)
+
+	err := ctx.ShouldBind(&prama)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	bind := TeachertoclassModel{
+		UserID: prama.UserID,
+	}
+
+	_, err = c.dbmap.Delete(&bind)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+	})
+}
+
+func (c *Controller) modifyBind(ctx *gin.Context) {
+	var (
+		prama struct {
+			UserID   string `json: "userid"`
+			RoomID   string `json: "roomid"`
+			Loaction string `json: "location"`
+		}
+	)
+
+	err := ctx.ShouldBind(&prama)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest})
+		return
+	}
+
+	bind := TeachertoclassModel{
+		UserID:   prama.UserID,
+		RoomID:   prama.RoomID,
+		Loaction: prama.Loaction,
+	}
+
+	_, err = c.dbmap.Update(bind)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+	})
+}
+
+func (c *Controller) listBind(ctx *gin.Context) {
+	var binds []TeachertoclassModel
+	_, err := c.dbmap.Select(&binds, "select * from teacherToRoom")
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": http.StatusBadGateway})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"data":   binds,
 	})
 }

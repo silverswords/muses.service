@@ -49,7 +49,6 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	r.POST("/changename", c.changeName)
 	r.POST("/changePassword", c.changePassword)
 	r.POST("/login", c.login)
-	r.POST("/sendMsg", c.sendMsg)
 }
 
 func (c *Controller) create(ctx *gin.Context) {
@@ -231,8 +230,4 @@ func (c *Controller) changePassword(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 	})
-}
-
-func (c *Controller) sendMsg(ctx *gin.Context) {
-
 }
