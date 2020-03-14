@@ -32,6 +32,7 @@ func InitRouter() *gin.Engine {
 	connetionManager := connection.NewConnectionManager()
 	go connetionManager.Run()
 
+	// update WS
 	r.GET("/ws", connetionManager.UpGraderWs)
 
 	// student apis
@@ -48,9 +49,7 @@ func InitRouter() *gin.Engine {
 
 	// room apis
 	roomConn := room.NewDB(dbmap)
-	roomGroup := apiGrp.Group("/room")
-	// roomGroup.Use(middleware.MwUser)
-	roomConn.RegisterRouter(roomGroup)
+	roomConn.RegisterRouter(apiGrp.Group("/room"))
 
 	err = dbmap.CreateTablesIfNotExists()
 	checkErr(err, "Create tables failed")
