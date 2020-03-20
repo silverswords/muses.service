@@ -23,7 +23,7 @@ func InitConf() {
 
 func main() {
 	InitConf()
-	r := apis.InitRouter()
+	r := apis.InitRouter(cfg)
 
 	port, _ := cfg.GetValue("gin", "port")
 	ginServer := fmt.Sprintf(":%v", port)

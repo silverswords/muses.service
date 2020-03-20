@@ -2,8 +2,10 @@ package apis
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
+	"github.com/Unknwon/goconfig"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/gorp.v1"
@@ -14,11 +16,14 @@ import (
 )
 
 // InitRouter -
-func InitRouter() *gin.Engine {
-	r := gin.Default()
-	apiGrp := r.Group("api/v1")
+func InitRouter(cfg *goconfig.ConfigFile) *gin.Engine {
+	dbUsername, _ := cfg.GetValue("mysql", "username")
+	dbPassword, _ := cfg.GetValue("mysql", "password")
+	dbURL, _ := cfg.GetValue("mysql", "url")
+	dbName, _ := cfg.GetValue("mysql", "dbname")
+	dbConf := fmt.Sprintf("%v:%v@tcp(%v)/%v", dbUsername, dbPassword, dbURL, dbName)
 
-	dbConn, err := sql.Open("mysql", "root:111111@tcp(127.0.0.1:3306)/test")
+	dbConn, err := sql.Open("mysql", dbConf)
 	dbmap := &gorp.DbMap{Db: dbConn, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
 
 	err = dbmap.TruncateTables()
@@ -28,6 +33,8 @@ func InitRouter() *gin.Engine {
 		panic(err)
 	}
 
+	r := gin.Default()
+	apiGrp := r.Group("api/v1")
 	// connection
 	connetionManager := connection.NewConnectionManager()
 	go connetionManager.Run()
