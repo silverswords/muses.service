@@ -53,7 +53,7 @@ func (c *Controller) RegisterRouter(r gin.IRouter) {
 	r.GET("/listRoom", c.listRoom)
 	r.POST("/modifyRoom", c.modifyRoom)
 	r.POST("/bindRoom", c.bindRoom)
-	r.POST("/removeBind", c.removeBindRoom)
+	r.POST("/removeBind", c.removeBind)
 	r.POST("/modifyBind", c.modifyBind)
 	r.POST("/listBind", c.listBind)
 }
@@ -196,7 +196,7 @@ func (c *Controller) bindRoom(ctx *gin.Context) {
 	}
 
 	bind := TeachertoclassModel{
-		RoomID:   prama.UserID,
+		UserID:   prama.UserID,
 		RoomID:   prama.RoomID,
 		Loaction: prama.Loaction,
 	}

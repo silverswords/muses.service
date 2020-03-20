@@ -14,6 +14,7 @@ type Manager struct {
 	connetionManager connection.Manager
 }
 
+// Room -
 type Room struct {
 	RoomID  string
 	Persons []string
@@ -84,7 +85,7 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
-	room, ok := m.Rooms[param.RoomID]
+	_, ok := m.Rooms[param.RoomID]
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status": http.StatusBadRequest,
@@ -94,7 +95,7 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 		return
 	}
 
-	_, ok = m.connetionManager.Manager.Connections[param.UserID]
+	_, ok = m.connetionManager.Connections[param.UserID]
 	if !ok {
 		ctx.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -105,7 +106,6 @@ func (m *Manager) joinRoom(ctx *gin.Context) {
 	}
 
 	m.Rooms[param.RoomID].Persons = append(m.Rooms[param.RoomID].Persons, param.UserID)
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 	})
